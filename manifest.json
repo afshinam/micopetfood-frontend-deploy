@@ -1,0 +1,30 @@
+{
+  "short_name": "میکو",
+  "name": "میکو — غذای اختصاصی سگ",
+  "description": "غذای خانگی، تازه و اختصاصی برای سگ شما. محاسبه دقیق نیاز غذایی، پخت با مواد سالم و ارسال تا درب منزل.",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#AF6B24",
+  "background_color": "#F8F5EF",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
