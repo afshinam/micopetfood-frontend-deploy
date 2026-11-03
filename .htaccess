@@ -1,0 +1,162 @@
+# ============================================================
+#  .htaccess بهینه برای فرانت‌اند micopetfood.ir
+#  نسخه ۳.۰ - ساده‌سازی‌شده برای حداکثر سازگاری
+#
+#  ⚠️ این نسخه فقط از ماژول‌های پراستفاده استفاده می‌کنه
+#  اگه سایت ارور 500 داد، خط‌های <IfModule mod_headers.c> رو
+#  به‌صورت خط‌به‌خط تست کن (یکی از ماژول‌ها غیرفعاله)
+# ============================================================
+
+# ------------------------------------------------------------
+#  ۰. تنظیمات پایه (این خطوط همیشه کار می‌کنن)
+# ------------------------------------------------------------
+DirectoryIndex index.html
+AddDefaultCharset UTF-8
+Options -Indexes +FollowSymLinks
+
+
+# ------------------------------------------------------------
+#  ۱. فشرده‌سازی GZIP — روش ساده و استاندارد
+# ------------------------------------------------------------
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html
+  AddOutputFilterByType DEFLATE text/plain
+  AddOutputFilterByType DEFLATE text/css
+  AddOutputFilterByType DEFLATE text/javascript
+  AddOutputFilterByType DEFLATE application/javascript
+  AddOutputFilterByType DEFLATE application/x-javascript
+  AddOutputFilterByType DEFLATE application/json
+  AddOutputFilterByType DEFLATE application/xml
+  AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+
+# ------------------------------------------------------------
+#  ۲. Cache-Control برای فایل‌های استاتیک (مهم برای PageSpeed)
+# ------------------------------------------------------------
+<IfModule mod_expires.c>
+  ExpiresActive On
+
+  # JS و CSS — یک سال (هش‌دار هستن)
+  ExpiresByType text/javascript "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType text/css "access plus 1 year"
+
+  # تصاویر (شامل WebP) — یک سال
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/avif "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/x-icon "access plus 1 year"
+
+  # فونت‌ها — یک سال
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType application/font-woff "access plus 1 year"
+  ExpiresByType application/vnd.ms-fontobject "access plus 1 year"
+
+  # HTML — بدون cache (برای آپدیت‌های فوری)
+  ExpiresByType text/html "access plus 0 seconds"
+
+  # JSON — بدون cache
+  ExpiresByType application/json "access plus 0 seconds"
+</IfModule>
+
+
+# ------------------------------------------------------------
+#  ۳. هدرهای Cache-Control اضافی (با mod_headers)
+# ------------------------------------------------------------
+<IfModule mod_headers.c>
+  # JS/CSS هش‌دار — immutable
+  <FilesMatch "\.(js|css|mjs)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # تصاویر — یک سال
+  <FilesMatch "\.(png|jpe?g|gif|webp|avif|ico|svg)$">
+    Header set Cache-Control "public, max-age=31536000"
+  </FilesMatch>
+
+  # فونت‌ها — یک سال
+  <FilesMatch "\.(woff2?|ttf|otf|eot)$">
+    Header set Cache-Control "public, max-age=31536000"
+  </FilesMatch>
+
+  # HTML — همیشه revalidate
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+
+  # manifest.json — یک ساعت
+  <FilesMatch "(manifest|asset-manifest)\.json$">
+    Header set Cache-Control "public, max-age=3600"
+  </FilesMatch>
+
+  # Vary: Accept-Encoding
+  Header append Vary Accept-Encoding
+</IfModule>
+
+
+# ------------------------------------------------------------
+#  ۴. هدرهای امنیتی پایه
+# ------------------------------------------------------------
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+
+# ------------------------------------------------------------
+#  ۵. ETag
+# ------------------------------------------------------------
+FileETag MTime Size
+
+
+# ------------------------------------------------------------
+#  ۶. SPA Fallback — همه مسیرها به index.html
+#     (با استثنا برای /api/ و /admin/)
+# ------------------------------------------------------------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # مسیرهای API به backend پاس داده می‌شن
+  RewriteRule ^(api|admin)/ - [L]
+
+  # اگه فایل واقعی وجود داشت، مستقیم سرو کن
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # در غیر این‌صورت، index.html
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+
+# ------------------------------------------------------------
+#  ۷. MIME types
+# ------------------------------------------------------------
+<IfModule mod_mime.c>
+  AddType application/javascript .js .mjs
+  AddType text/css .css
+  AddType image/webp .webp
+  AddType image/avif .avif
+  AddType application/json .json
+  AddType application/manifest+json .webmanifest
+  AddType font/woff2 .woff2
+  AddType application/font-woff .woff
+</IfModule>
+
+
+# ------------------------------------------------------------
+#  ۸. محافظت از فایل‌های حساس
+# ------------------------------------------------------------
+<FilesMatch "(^\.|\.(env|git|bak|log|sql|sh)$)">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
