@@ -1,16 +1,9 @@
 # ============================================================
 #  .htaccess بهینه برای فرانت‌اند micopetfood.ir
-#  نسخه ۴.۰ — تخصصی SEO
+#  نسخه ۴.۱ — سازگار با سرور بدون mod_proxy
 #
-#  ✅ تغییرات کلیدی این نسخه:
-#    ۱. رفع مشکل sitemap.xml (پروکسی به بک‌اند)
-#    ۲. ریدایرکت www به non-www (جلوگیری از Duplicate Content)
-#    ۳. ریدایرکت HTTP به HTTPS (HSTS)
-#    ۴. اضافه شدن هدرهای امنیتی (HSTS, CSP, Permissions-Policy)
-#    ۵. صفحه ۴۰۴ واقعی (بدون بازگشت به صفحه اصلی)
-#    ۶. نرمال‌سازی Trailing Slash
-#    ۷. فعال‌سازی Dynamic Rendering برای Googlebot
-#    ۸. کش بهتر برای فایل‌های استاتیک
+#  ✅ این نسخه از ریدایرکت 301 استفاده می‌کنه به‌جای پروکسی
+#     تا روی هر سروری کار کنه.
 # ============================================================
 
 # ------------------------------------------------------------
@@ -20,18 +13,13 @@ DirectoryIndex index.html
 AddDefaultCharset UTF-8
 Options -Indexes +FollowSymLinks
 
-# فعال‌سازی RewriteEngine
 <IfModule mod_rewrite.c>
   RewriteEngine On
 </IfModule>
 
 # ============================================================
-#  ۱. ریدایرکت‌های بحرانی SEO (باید قبل از همه باشه)
+#  ۱. ریدایرکت www به non-www (جلوگیری از Duplicate Content)
 # ============================================================
-
-# ------------------------------------------------------------
-#  ۱.۱. ریدایرکت www به non-www (جلوگیری از Duplicate Content)
-# ------------------------------------------------------------
 <IfModule mod_rewrite.c>
   RewriteCond %{HTTPS} off [OR]
   RewriteCond %{HTTP_HOST} ^www\. [NC]
@@ -40,64 +28,31 @@ Options -Indexes +FollowSymLinks
 </IfModule>
 
 # ============================================================
-#  ۲. رفع مشکل sitemap.xml (پروکسی به بک‌اند)
+#  ۲. ریدایرکت sitemap.xml به بک‌اند (روش 301)
 # ============================================================
-# مشکل: https://micopetfood.ir/sitemap.xml محتوای .htaccess رو برمی‌گردوند!
-# راه‌حل: پروکسی به بک‌اند که sitemap واقعی رو تولید می‌کنه
 <IfModule mod_rewrite.c>
-  # sitemap.xml
-  RewriteRule ^sitemap\.xml$ https://api.micopetfood.ir/sitemap.xml [P,L]
-  # robots.txt (از بک‌اند می‌خوایم تا سitemap reference داشته باشه)
-  RewriteRule ^robots\.txt$ https://api.micopetfood.ir/robots.txt [P,L]
-  # RSS feed
-  RewriteRule ^feed\.xml$ https://api.micopetfood.ir/feed.xml [P,L]
-  RewriteRule ^rss\.xml$ https://api.micopetfood.ir/feed.xml [P,L]
+  # sitemap.xml — ریدایرکت 301 به بک‌اند
+  RewriteRule ^sitemap\.xml$ https://api.micopetfood.ir/sitemap.xml [R=301,L,QSA]
+  # robots.txt — ریدایرکت 301 به بک‌اند
+  RewriteRule ^robots\.txt$ https://api.micopetfood.ir/robots.txt [R=301,L,QSA]
+  # RSS feed — ریدایرکت 301 به بک‌اند
+  RewriteRule ^feed\.xml$ https://api.micopetfood.ir/feed.xml [R=301,L,QSA]
+  RewriteRule ^rss\.xml$ https://api.micopetfood.ir/feed.xml [R=301,L,QSA]
 </IfModule>
 
 # ============================================================
-#  ۳. Dynamic Rendering برای Googlebot (مهم برای SPA)
+#  ۳. نرمال‌سازی Trailing Slash
 # ============================================================
-# وقتی Googlebot یا بقیه crawlerها صفحه‌ای رو باز می‌کنن،
-# به‌جای SPA، HTML کامل از بک‌اند دریافت می‌کنن.
-# این کار باعث می‌شه گوگل محتوای کامل رو ببینه و ایندکس کنه.
-<IfModule mod_rewrite.c>
-  # تشخیص botها
-  RewriteCond %{HTTP_USER_AGENT} (Googlebot|Bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|Exabot|facebot|ia_archiver|AhrefsBot|SemrushBot|rogerbot|MJ12bot|DotBot|Pinterestbot) [NC]
-  # فقط برای صفحات HTML (نه فایل‌های استاتیک)
-  RewriteCond %{REQUEST_URI} !^/static/
-  RewriteCond %{REQUEST_URI} !^/uploads/
-  RewriteCond %{REQUEST_URI} !^/favicon
-  RewriteCond %{REQUEST_URI} !^/logo
-  RewriteCond %{REQUEST_URI} !^/manifest
-  RewriteCond %{REQUEST_URI} !^/apple-touch
-  RewriteCond %{REQUEST_URI} !^/robots\.txt
-  RewriteCond %{REQUEST_URI} !^/sitemap\.xml
-  RewriteCond %{REQUEST_URI} !^/feed\.xml
-  RewriteCond %{REQUEST_URI} !^/rss\.xml
-  # صفحه اصلی و صفحات سئو مهم
-  RewriteRule ^$ https://api.micopetfood.ir/seo/snapshot/ [P,L]
-  RewriteRule ^about$ https://api.micopetfood.ir/seo/snapshot/about [P,L]
-  RewriteRule ^contact$ https://api.micopetfood.ir/seo/snapshot/contact [P,L]
-  RewriteRule ^blog$ https://api.micopetfood.ir/seo/snapshot/blog [P,L]
-  RewriteRule ^blog/(.+)$ https://api.micopetfood.ir/seo/snapshot/blog/%1 [P,L]
-</IfModule>
-
-# ============================================================
-#  ۴. نرمال‌سازی Trailing Slash (جلوگیری از Duplicate Content)
-# ============================================================
-# همه URL‌ها بدون / در انتها باشن (به‌جز صفحه اصلی)
 <IfModule mod_rewrite.c>
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^(.*)/$ /$1 [R=301,L]
 </IfModule>
 
 # ============================================================
-#  ۵. صفحه ۴۰۴ واقعی (HTTP 404 برگردونه)
+#  ۴. صفحه ۴۰۴ واقعی
 # ============================================================
-# مشکل: قبلاً هر URL اشتباهی ۲۰۰ برمی‌گردوند
 ErrorDocument 404 /index.html
 <IfModule mod_rewrite.c>
-  # اگه فایل یا دایرکتوری وجود نداشت، ۴۰۴ بده
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_URI} !^/static/
@@ -109,102 +64,61 @@ ErrorDocument 404 /index.html
 </IfModule>
 
 # ============================================================
-#  ۶. هدرهای امنیتی بحرانی (Google این‌ها رو چک می‌کنه)
+#  ۵. هدرهای امنیتی
 # ============================================================
 <IfModule mod_headers.c>
-  # HSTS — الزامی برای HTTPS
+  # HSTS
   Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" env=HTTPS
-
-  # X-Content-Type-Options — جلوگیری از MIME sniffing
+  # X-Content-Type-Options
   Header always set X-Content-Type-Options "nosniff"
-
-  # X-Frame-Options — جلوگیری از clickjacking
+  # X-Frame-Options
   Header always set X-Frame-Options "SAMEORIGIN"
-
-  # Referrer-Policy — کنترل referrer
+  # Referrer-Policy
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
-
-  # Permissions-Policy — کنترل دسترسی‌ها
+  # Permissions-Policy
   Header always set Permissions-Policy "geolocation=(self), camera=(), microphone=(), payment=()"
-
-  # Content-Security-Policy — مناسب React SPA
+  # Content-Security-Policy
   Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https://api.micopetfood.ir https://micopetfood.ir; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
-
-  # Cross-Origin-Headers — برای OG و اشتراک‌گذاری
+  # Cross-Origin
   Header always set Cross-Origin-Opener-Policy "same-origin"
   Header always set Cross-Origin-Resource-Policy "same-site"
 </IfModule>
 
 # ============================================================
-#  ۷. فشرده‌سازی GZIP + Brotli (سرعت لود = SEO)
+#  ۶. فشرده‌سازی GZIP
 # ============================================================
 <IfModule mod_deflate.c>
-  AddOutputFilterByType DEFLATE text/html
-  AddOutputFilterByType DEFLATE text/plain
-  AddOutputFilterByType DEFLATE text/css
-  AddOutputFilterByType DEFLATE text/javascript
-  AddOutputFilterByType DEFLATE application/javascript
-  AddOutputFilterByType DEFLATE application/x-javascript
-  AddOutputFilterByType DEFLATE application/json
-  AddOutputFilterByType DEFLATE application/xml
-  AddOutputFilterByType DEFLATE application/rss+xml
-  AddOutputFilterByType DEFLATE application/atom+xml
-  AddOutputFilterByType DEFLATE image/svg+xml
-  AddOutputFilterByType DEFLATE font/woff2
-  AddOutputFilterByType DEFLATE application/font-woff2
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript
+  AddOutputFilterByType DEFLATE application/javascript application/x-javascript
+  AddOutputFilterByType DEFLATE application/json application/xml application/rss+xml
+  AddOutputFilterByType DEFLATE image/svg+xml font/woff2 application/font-woff2
 </IfModule>
 
 <IfModule mod_brotli.c>
-  AddOutputFilterByType BROTLI_COMPRESS text/html
-  AddOutputFilterByType BROTLI_COMPRESS text/plain
-  AddOutputFilterByType BROTLI_COMPRESS text/css
-  AddOutputFilterByType BROTLI_COMPRESS text/javascript
-  AddOutputFilterByType BROTLI_COMPRESS application/javascript
-  AddOutputFilterByType BROTLI_COMPRESS application/json
-  AddOutputFilterByType BROTLI_COMPRESS application/xml
-  AddOutputFilterByType BROTLI_COMPRESS image/svg+xml
-  AddOutputFilterByType BROTLI_COMPRESS font/woff2
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/css text/javascript
+  AddOutputFilterByType BROTLI_COMPRESS application/javascript application/json application/xml
+  AddOutputFilterByType BROTLI_COMPRESS image/svg+xml font/woff2
 </IfModule>
 
 # ============================================================
-#  ۸. Cache-Control برای فایل‌های استاتیک (PageSpeed)
+#  ۷. Cache-Control
 # ============================================================
 <IfModule mod_expires.c>
   ExpiresActive On
-
-  # HTML — کوتاه (چون محتوای بلاگ تغییر می‌کنه)
   ExpiresByType text/html "access plus 5 minutes"
-
-  # JS و CSS با هش — یک سال
   ExpiresByType text/javascript "access plus 1 year"
   ExpiresByType application/javascript "access plus 1 year"
   ExpiresByType text/css "access plus 1 year"
-
-  # تصاویر — یک سال
   ExpiresByType image/png "access plus 1 year"
   ExpiresByType image/jpeg "access plus 1 year"
   ExpiresByType image/webp "access plus 1 year"
-  ExpiresByType image/avif "access plus 1 year"
   ExpiresByType image/svg+xml "access plus 1 year"
   ExpiresByType image/gif "access plus 1 year"
   ExpiresByType image/x-icon "access plus 1 year"
-
-  # فونت‌ها — یک سال
   ExpiresByType font/woff2 "access plus 1 year"
-  ExpiresByType application/font-woff2 "access plus 1 year"
-  ExpiresByType font/ttf "access plus 1 year"
-  ExpiresByType font/otf "access plus 1 year"
-
-  # Manifest — یک روز
   ExpiresByType application/manifest+json "access plus 1 day"
-
-  # فایل‌های استاتیک — یک هفته
-  ExpiresByType text/xml "access plus 1 hour"
-  ExpiresByType application/xml "access plus 1 hour"
-  ExpiresByType application/json "access plus 0 seconds"
 </IfModule>
 
-# Cache-Control برای فایل‌های هش‌دار
 <IfModule mod_headers.c>
   <FilesMatch "\.(js|css)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
@@ -221,31 +135,11 @@ ErrorDocument 404 /index.html
 </IfModule>
 
 # ============================================================
-#  ۹. تنظیمات ETag (کمک به Conditional Requests)
-# ============================================================
-FileETag MTime Size
-
-# ============================================================
-#  ۱۰. جلوگیری از لیست شدن دایرکتوری‌ها
-# ============================================================
-Options -Indexes
-
-# ============================================================
-#  ۱۱. HTTP/2 Push (اگه سرور پشتیبانی کنه)
-# ============================================================
-<IfModule mod_http2.c>
-  H2Push on
-</IfModule>
-
-# ============================================================
-#  ۱۲. Charset
+#  ۸. Charset و MIME Types
 # ============================================================
 AddDefaultCharset UTF-8
 AddCharset UTF-8 .html .css .js .json .xml .rss .atom
 
-# ============================================================
-#  ۱۳. MIME Types
-# ============================================================
 <IfModule mod_mime.c>
   AddType application/json .json
   AddType application/manifest+json .webmanifest
@@ -254,20 +148,23 @@ AddCharset UTF-8 .html .css .js .json .xml .rss .atom
   AddType image/webp .webp
   AddType image/avif .avif
   AddType font/woff2 .woff2
-  AddType font/ttf .ttf
 </IfModule>
 
 # ============================================================
-#  ۱۴. مسدود کردن فایل‌های حساس
+#  ۹. مسدود کردن فایل‌های حساس
 # ============================================================
 <FilesMatch "(^\.|\.bak$|\.log$|\.sql$|\.db$|\.sqlite$|\.env)">
   Require all denied
 </FilesMatch>
 
 # ============================================================
-#  ۱۵. SPA Routing (مهم‌ترین بخش برای React)
+#  ۱۰. ETag
 # ============================================================
-# این بخش در آخر میاد تا اول ریدایرکت‌ها و پروکسی‌ها اعمال بشن
+FileETag MTime Size
+
+# ============================================================
+#  ۱۱. SPA Routing (آخرین قانون)
+# ============================================================
 <IfModule mod_rewrite.c>
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
@@ -275,16 +172,14 @@ AddCharset UTF-8 .html .css .js .json .xml .rss .atom
   RewriteCond %{REQUEST_URI} !^/uploads/
   RewriteCond %{REQUEST_URI} !^/api/
   RewriteCond %{REQUEST_URI} !^/admin/
-  RewriteCond %{REQUEST_URI} !^/seo/
   RewriteCond %{REQUEST_URI} !^/robots\.txt
   RewriteCond %{REQUEST_URI} !^/sitemap\.xml
   RewriteCond %{REQUEST_URI} !^/feed\.xml
   RewriteCond %{REQUEST_URI} !^/rss\.xml
   RewriteCond %{REQUEST_URI} !\.(css|js|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf|eot|map)$ [NC]
-  # اگه Googlebot نبود، index.html رو بده (SPA)
   RewriteRule . /index.html [L]
 </IfModule>
 
 # ============================================================
-#  پایان فایل
+#  پایان
 # ============================================================
