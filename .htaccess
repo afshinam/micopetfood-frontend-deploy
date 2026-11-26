@@ -1,9 +1,11 @@
 # ============================================================
 #  .htaccess بهینه برای فرانت‌اند micopetfood.ir
-#  نسخه ۴.۱ — سازگار با سرور بدون mod_proxy
+#  نسخه ۴.۲ — رفع مشکل صفحه‌ی سفید بلاگ
 #
-#  ✅ این نسخه از ریدایرکت 301 استفاده می‌کنه به‌جای پروکسی
-#     تا روی هر سروری کار کنه.
+#  ✅ این نسخه:
+#    - قانون ۴۰۴ حذف شد (باگ: باعث صفحه‌ی سفید می‌شد)
+#    - SPA routing اولویت پیدا کرد
+#    - صفحات بلاگ، about، contact درست لود می‌شن
 # ============================================================
 
 # ------------------------------------------------------------
@@ -31,11 +33,8 @@ Options -Indexes +FollowSymLinks
 #  ۲. ریدایرکت sitemap.xml به بک‌اند (روش 301)
 # ============================================================
 <IfModule mod_rewrite.c>
-  # sitemap.xml — ریدایرکت 301 به بک‌اند
   RewriteRule ^sitemap\.xml$ https://api.micopetfood.ir/sitemap.xml [R=301,L,QSA]
-  # robots.txt — ریدایرکت 301 به بک‌اند
   RewriteRule ^robots\.txt$ https://api.micopetfood.ir/robots.txt [R=301,L,QSA]
-  # RSS feed — ریدایرکت 301 به بک‌اند
   RewriteRule ^feed\.xml$ https://api.micopetfood.ir/feed.xml [R=301,L,QSA]
   RewriteRule ^rss\.xml$ https://api.micopetfood.ir/feed.xml [R=301,L,QSA]
 </IfModule>
@@ -49,37 +48,23 @@ Options -Indexes +FollowSymLinks
 </IfModule>
 
 # ============================================================
-#  ۴. صفحه ۴۰۴ واقعی
+#  ۴. ✅ حذف قانون ۴۰۴ — این قانون باعث صفحه‌ی سفید می‌شد!
+#     SPA خودش صفحه‌ی NotFound داره و 404 رو هندل می‌کنه.
+#     قانون ۴۰۴ قبلی، صفحات /blog/<slug> رو قبل از لود SPA،
+#     با 404 رد می‌کرد.
 # ============================================================
-ErrorDocument 404 /index.html
-<IfModule mod_rewrite.c>
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteCond %{REQUEST_URI} !^/static/
-  RewriteCond %{REQUEST_URI} !^/uploads/
-  RewriteCond %{REQUEST_URI} !^/api/
-  RewriteCond %{REQUEST_URI} !^/admin/
-  RewriteCond %{REQUEST_URI} !\.(css|js|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf|eot|map)$ [NC]
-  RewriteRule ^ - [R=404,L]
-</IfModule>
+# (این بخش عمداً حذف شده)
 
 # ============================================================
 #  ۵. هدرهای امنیتی
 # ============================================================
 <IfModule mod_headers.c>
-  # HSTS
   Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" env=HTTPS
-  # X-Content-Type-Options
   Header always set X-Content-Type-Options "nosniff"
-  # X-Frame-Options
   Header always set X-Frame-Options "SAMEORIGIN"
-  # Referrer-Policy
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
-  # Permissions-Policy
   Header always set Permissions-Policy "geolocation=(self), camera=(), microphone=(), payment=()"
-  # Content-Security-Policy
   Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https://api.micopetfood.ir https://micopetfood.ir; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
-  # Cross-Origin
   Header always set Cross-Origin-Opener-Policy "same-origin"
   Header always set Cross-Origin-Resource-Policy "same-site"
 </IfModule>
@@ -163,20 +148,37 @@ AddCharset UTF-8 .html .css .js .json .xml .rss .atom
 FileETag MTime Size
 
 # ============================================================
-#  ۱۱. SPA Routing (آخرین قانون)
+#  ۱۱. ✅ SPA Routing — مهم‌ترین بخش
+#     این قانون باید آخر باشه. هر URL که فایل فیزیکی نیست
+#     (مثل /blog/ghazay-khanegi-sag) رو به index.html بفرسته
+#     تا React Router اون رو هندل کنه.
 # ============================================================
 <IfModule mod_rewrite.c>
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteCond %{REQUEST_URI} !^/static/
-  RewriteCond %{REQUEST_URI} !^/uploads/
-  RewriteCond %{REQUEST_URI} !^/api/
-  RewriteCond %{REQUEST_URI} !^/admin/
-  RewriteCond %{REQUEST_URI} !^/robots\.txt
-  RewriteCond %{REQUEST_URI} !^/sitemap\.xml
-  RewriteCond %{REQUEST_URI} !^/feed\.xml
-  RewriteCond %{REQUEST_URI} !^/rss\.xml
-  RewriteCond %{REQUEST_URI} !\.(css|js|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf|eot|map)$ [NC]
+  # اگه فایل یا پوشه واقعی هست، کاری نکن
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # فایل‌های استاتیک رو دست نزن
+  RewriteCond %{REQUEST_URI} ^/static/ [OR]
+  RewriteCond %{REQUEST_URI} ^/uploads/ [OR]
+  RewriteCond %{REQUEST_URI} ^/api/ [OR]
+  RewriteCond %{REQUEST_URI} ^/admin/
+  RewriteRule ^ - [L]
+
+  # sitemap, robots, feed رو دست نزن (قبلاً هندل شدن)
+  RewriteCond %{REQUEST_URI} ^/sitemap\.xml [OR]
+  RewriteCond %{REQUEST_URI} ^/robots\.txt [OR]
+  RewriteCond %{REQUEST_URI} ^/feed\.xml [OR]
+  RewriteCond %{REQUEST_URI} ^/rss\.xml
+  RewriteRule ^ - [L]
+
+  # فایل‌های با پسوند رو دست نزن
+  RewriteCond %{REQUEST_URI} \.(css|js|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf|eot|map|json|txt|xml|webmanifest)$ [NC]
+  RewriteRule ^ - [L]
+
+  # ✅ هر چیز دیگه (شامل /blog/<slug>, /about, /contact, /panel/*, ...)
+  # رو به index.html بفرست تا React Router هندل کنه
   RewriteRule . /index.html [L]
 </IfModule>
 
